@@ -1,19 +1,51 @@
 import tkinter as tk
+from tkinter import colorchooser
 
 class DrawingApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Simple Drawing App")
+        self.root.title("Advanced Drawing App")
 
-        self.canvas = tk.Canvas(root, bg="white", width=400, height=400)
+        self.canvas = tk.Canvas(root, bg="white", width=800, height=600)
         self.canvas.pack(expand=tk.YES, fill=tk.BOTH)
+
+        self.setup_menu()
+        self.setup_tools()
+
+    def setup_menu(self):
+        menu_bar = tk.Menu(self.root)
+        self.root.config(menu=menu_bar)
+
+        file_menu = tk.Menu(menu_bar, tearoff=0)
+        menu_bar.add_cascade(label="File", menu=file_menu)
+        file_menu.add_command(label="Exit", command=self.root.destroy)
+
+        edit_menu = tk.Menu(menu_bar, tearoff=0)
+        menu_bar.add_cascade(label="Edit", menu=edit_menu)
+        edit_menu.add_command(label="Clear Canvas", command=self.clear_canvas)
+
+        color_menu = tk.Menu(menu_bar, tearoff=0)
+        menu_bar.add_cascade(label="Colors", menu=color_menu)
+        color_menu.add_command(label="Choose Color", command=self.choose_color)
+
+    def setup_tools(self):
+        self.color = "black"
+        self.brush_size = 2
 
         self.canvas.bind("<B1-Motion>", self.paint)
 
+    def choose_color(self):
+        color = colorchooser.askcolor()[1]
+        if color:
+            self.color = color
+
     def paint(self, event):
-        x1, y1 = (event.x - 1), (event.y - 1)
-        x2, y2 = (event.x + 1), (event.y + 1)
-        self.canvas.create_oval(x1, y1, x2, y2, fill="black", width=2)
+        x1, y1 = (event.x - self.brush_size), (event.y - self.brush_size)
+        x2, y2 = (event.x + self.brush_size), (event.y + self.brush_size)
+        self.canvas.create_oval(x1, y1, x2, y2, fill=self.color, width=2)
+
+    def clear_canvas(self):
+        self.canvas.delete("all")
 
 if __name__ == "__main__":
     root = tk.Tk()
