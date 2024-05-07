@@ -4,7 +4,7 @@ from tkinter import colorchooser, filedialog
 class DrawingApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Extended Drawing App")
+        self.root.title("Advanced Drawing App")
 
         self.canvas = tk.Canvas(root, bg="white", width=800, height=600)
         self.canvas.pack(expand=tk.YES, fill=tk.BOTH)
@@ -38,15 +38,28 @@ class DrawingApp:
         menu_bar.add_cascade(label="Colors", menu=color_menu)
         color_menu.add_command(label="Choose Color", command=self.choose_color)
 
-        size_menu = tk.Menu(menu_bar, tearoff=0)
-        menu_bar.add_cascade(label="Brush Size", menu=size_menu)
-        size_menu.add_command(label="Small", command=lambda: self.set_brush_size(2))
-        size_menu.add_command(label="Medium", command=lambda: self.set_brush_size(5))
-        size_menu.add_command(label="Large", command=lambda: self.set_brush_size(10))
+        pencil_menu = tk.Menu(menu_bar, tearoff=0)
+        menu_bar.add_cascade(label="Pencil", menu=pencil_menu)
+        pencil_menu.add_command(label="Normal", command=lambda: self.set_pencil("normal"))
+        pencil_menu.add_command(label="Dotted", command=lambda: self.set_pencil("dotted"))
+        pencil_menu.add_command(label="Square", command=lambda: self.set_pencil("square"))
+        pencil_menu.add_command(label="Circle", command=lambda: self.set_pencil("circle"))
+
+        eraser_menu = tk.Menu(menu_bar, tearoff=0)
+        menu_bar.add_cascade(label="Eraser", menu=eraser_menu)
+        eraser_menu.add_command(label="Small", command=lambda: self.set_eraser(5))
+        eraser_menu.add_command(label="Medium", command=lambda: self.set_eraser(10))
+        eraser_menu.add_command(label="Large", command=lambda: self.set_eraser(15))
+
+        draw_menu = tk.Menu(menu_bar, tearoff=0)
+        menu_bar.add_cascade(label="Draw", menu=draw_menu)
+        draw_menu.add_command(label="Line", command=self.draw_line)
 
     def setup_tools(self):
+        self.current_tool = "pencil"
         self.color = "black"
-        self.brush_size = 2
+        self.pencil_size = 2
+        self.eraser_size = 5
 
         self.canvas.bind("<B1-Motion>", self.paint)
 
@@ -55,13 +68,30 @@ class DrawingApp:
         if color:
             self.color = color
 
-    def set_brush_size(self, size):
-        self.brush_size = size
+    def set_pencil(self, style):
+        self.current_tool = "pencil"
+        self.pencil_style = style
+
+    def set_eraser(self, size):
+        self.current_tool = "eraser"
+        self.eraser_size = size
 
     def paint(self, event):
-        x1, y1 = (event.x - self.brush_size), (event.y - self.brush_size)
-        x2, y2 = (event.x + self.brush_size), (event.y + self.brush_size)
-        self.canvas.create_oval(x1, y1, x2, y2, fill=self.color, width=2)
+        if self.current_tool == "pencil":
+            x1, y1 = (event.x - self.pencil_size), (event.y - self.pencil_size)
+            x2, y2 = (event.x + self.pencil_size), (event.y + self.pencil_size)
+            if self.pencil_style == "normal":
+                self.canvas.create_oval(x1, y1, x2, y2, fill=self.color, width=2)
+            elif self.pencil_style == "dotted":
+                self.canvas.create_oval(x1, y1, x2, y2, fill=self.color, width=2, dash=(1, 2))
+            elif self.pencil_style == "square":
+                self.canvas.create_rectangle(x1, y1, x2, y2, fill=self.color, width=0)
+            elif self.pencil_style == "circle":
+                self.canvas.create_oval(x1, y1, x2, y2, fill=self.color, width=0)
+        elif self.current_tool == "eraser":
+            x1, y1 = (event.x - self.eraser_size), (event.y - self.eraser_size)
+            x2, y2 = (event.x + self.eraser_size), (event.y + self.eraser_size)
+            self.canvas.create_rectangle(x1, y1, x2, y2, fill="white", width=0)
 
         # Store the drawing state for undo/redo
         self.save_state()
@@ -99,6 +129,25 @@ class DrawingApp:
             self.canvas.delete("all")
             self.canvas.create_image(0, 0, anchor=tk.NW, image=tk.PhotoImage(file=file_path))
             self.save_state()
+
+    def draw_line(self):
+        self.current_tool = "line"
+        self.canvas.bind("<Button-1>", self.start_line)
+
+    def start_line(self, event):
+        self.start_x = event.x
+        self.start_y = event.y
+        self.canvas.bind("<B1-Motion>", self.draw_temp_line)
+        self.canvas.bind("<ButtonRelease-1>", self.draw_final_line)
+
+    def draw_temp_line(self, event):
+        self.canvas.delete("temp_line")
+        self.canvas.create_line(self.start_x, self.start_y, event.x, event.y, fill=self.color, width=2, tags="temp_line")
+
+    def draw_final_line(self, event):
+        self.canvas.delete("temp_line")
+        self.canvas.create_line(self.start_x, self.start_y, event.x, event.y, fill=self.color, width=2)
+        self.save_state()
 
 if __name__ == "__main__":
     root = tk.Tk()
